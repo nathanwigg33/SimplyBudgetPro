@@ -22,6 +22,7 @@ export default function RootLayout() {
           <Stack.Screen name="add" options={{ presentation: 'modal' }} />
           <Stack.Screen name="category" options={{ presentation: 'modal' }} />
           <Stack.Screen name="account" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="asset" options={{ presentation: 'modal' }} />
         </Stack>
       )}
     </SafeAreaProvider>

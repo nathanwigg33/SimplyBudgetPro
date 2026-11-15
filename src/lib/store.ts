@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { monthKey, uid } from './format';
+import { monthKey, toISO, uid } from './format';
+import { summarize, worthLines } from './networth';
 import { starterAccounts, starterCategories } from './seed';
-import { Account, Category, Txn } from './types';
+import { Account, Category, RetirementPlan, Txn, WorthItem, WorthSnapshot } from './types';
 
 interface State {
   onboarded: boolean; // false until the person finishes setup (or restores a backup)
@@ -14,6 +15,9 @@ interface State {
   txns: Txn[];
   month: string; // month being viewed, YYYY-MM
   hydrated: boolean;
+  worthItems: WorthItem[];
+  snapshots: WorthSnapshot[];
+  retirement: RetirementPlan;
 
   setName: (n: string) => void;
   setMonth: (m: string) => void;
@@ -24,9 +28,21 @@ interface State {
   deleteCategory: (id: string) => void;
   saveAccount: (a: Omit<Account, 'id'> & { id?: string }) => void;
   deleteAccount: (id: string) => void;
+  saveWorthItem: (i: Omit<WorthItem, 'id' | 'updated'> & { id?: string }) => void;
+  deleteWorthItem: (id: string) => void;
+  setRetirement: (p: Partial<RetirementPlan>) => void;
   clearSamples: () => void;
   resetAll: () => void;
-  restore: (d: { name: string; categories: Category[]; accounts: Account[]; txns: Txn[]; warnAt?: number }) => void;
+  restore: (d: {
+    name: string;
+    categories: Category[];
+    accounts: Account[];
+    txns: Txn[];
+    warnAt?: number;
+    worthItems?: WorthItem[];
+    snapshots?: WorthSnapshot[];
+    retirement?: RetirementPlan;
+  }) => void;
 }
 
 function upsert<T extends { id: string }>(list: T[], item: Omit<T, 'id'> & { id?: string }): T[] {
@@ -43,6 +59,9 @@ const blank = () => ({
   accounts: starterAccounts,
   txns: [] as Txn[],
   month: monthKey(new Date()),
+  worthItems: [] as WorthItem[],
+  snapshots: [] as WorthSnapshot[],
+  retirement: { retireAge: 65, growth: 7 } as RetirementPlan,
 });
 
 export const useStore = create<State>()(
@@ -62,6 +81,9 @@ export const useStore = create<State>()(
       deleteCategory: (id) => set((s) => ({ categories: s.categories.filter((c) => c.id !== id) })),
       saveAccount: (a) => set((s) => ({ accounts: upsert(s.accounts, a) })),
       deleteAccount: (id) => set((s) => ({ accounts: s.accounts.filter((a) => a.id !== id) })),
+      saveWorthItem: (i) => set((s) => ({ worthItems: upsert(s.worthItems, { ...i, updated: toISO(new Date()) }) })),
+      deleteWorthItem: (id) => set((s) => ({ worthItems: s.worthItems.filter((i) => i.id !== id) })),
+      setRetirement: (p) => set((s) => ({ retirement: { ...s.retirement, ...p } })),
       clearSamples: () => set((s) => ({ txns: s.txns.filter((t) => !t.sample) })),
       restore: (d) =>
         set((s) => ({
@@ -71,6 +93,9 @@ export const useStore = create<State>()(
           categories: d.categories,
           accounts: d.accounts,
           txns: d.txns,
+          worthItems: d.worthItems ?? [],
+          snapshots: d.snapshots ?? [],
+          retirement: d.retirement ?? s.retirement,
           month: monthKey(new Date()),
         })),
       resetAll: () => set(blank()),
@@ -89,3 +114,20 @@ export const useStore = create<State>()(
     },
   ),
 );
+
+/**
+ * Keeps one net worth snapshot per day (today's is overwritten as balances change),
+ * which is what the net worth chart draws.
+ */
+function recordSnapshot(s: State) {
+  if (!s.hydrated) return;
+  const lines = worthLines(s.accounts, s.worthItems, s.txns);
+  const last = s.snapshots[s.snapshots.length - 1];
+  if (lines.length === 0 && !last) return;
+  const { assets, debts } = summarize(lines);
+  const today = toISO(new Date());
+  if (last && last.assets === assets && last.debts === debts) return;
+  const rest = last?.date === today ? s.snapshots.slice(0, -1) : s.snapshots;
+  useStore.setState({ snapshots: [...rest, { date: today, assets, debts }] });
+}
+useStore.subscribe(recordSnapshot);

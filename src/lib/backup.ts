@@ -9,13 +9,16 @@ export function makeBackup() {
   const s = useStore.getState();
   return JSON.stringify({
     app: MARK,
-    version: 1,
+    version: 2,
     savedAt: new Date().toISOString(),
     name: s.name,
     warnAt: s.warnAt,
     categories: s.categories,
     accounts: s.accounts,
     txns: s.txns,
+    worthItems: s.worthItems,
+    snapshots: s.snapshots,
+    retirement: s.retirement,
   });
 }
 
@@ -32,7 +35,17 @@ export function parseBackup(text: string) {
   if (!d || d.app !== MARK || !Array.isArray(d.categories) || !Array.isArray(d.accounts) || !Array.isArray(d.txns)) {
     throw new Error('That doesn’t look like a SimplyBudget backup.');
   }
-  return d as { name: string; warnAt?: number; categories: any[]; accounts: any[]; txns: any[]; savedAt?: string };
+  return d as {
+    name: string;
+    warnAt?: number;
+    categories: any[];
+    accounts: any[];
+    txns: any[];
+    worthItems?: any[];
+    snapshots?: any[];
+    retirement?: any;
+    savedAt?: string;
+  };
 }
 
 /** Copies the backup to the clipboard. Returns true on success. */

@@ -14,6 +14,7 @@ const TABS: Record<string, { icon: IconName; label: string }> = {
   index: { icon: 'home', label: 'Home' },
   budget: { icon: 'budget', label: 'Budget' },
   activity: { icon: 'activity', label: 'Activity' },
+  worth: { icon: 'worth', label: 'Worth' },
   settings: { icon: 'user', label: 'You' },
 };
 
@@ -51,6 +52,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" />
       <Tabs.Screen name="budget" />
       <Tabs.Screen name="activity" />
+      <Tabs.Screen name="worth" />
       <Tabs.Screen name="settings" />
     </Tabs>
   );
@@ -67,8 +69,8 @@ const styles = StyleSheet.create({
     borderTopColor: colors.line,
   },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4 },
-  label: { fontSize: 11, fontWeight: '700', color: colors.faint, marginTop: 2 },
-  plusWrap: { marginHorizontal: 10, marginTop: -26 },
+  label: { fontSize: 10.5, fontWeight: '700', color: colors.faint, marginTop: 2 },
+  plusWrap: { marginHorizontal: 4, marginTop: -26 },
   plus: {
     width: 62,
     height: 62,
