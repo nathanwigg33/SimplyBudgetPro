@@ -1,9 +1,22 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "simplybudgetpro",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-11-01",
+  "observability": { "enabled": true },
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
-  }
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Only the sign-in/sync API runs server code; everything else is served straight from the app files.
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "simplybudgetpro",
+      "database_id": "7bd4ce01-b5ab-49b8-8ba9-d65f15edd766",
+      "migrations_dir": "worker/migrations"
+    }
+  ]
 }

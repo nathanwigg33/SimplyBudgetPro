@@ -64,7 +64,7 @@ export default function Welcome() {
           {step === 'hello' ? (
             <View>
               <View style={styles.points}>
-                {['Log spending in two taps', 'See exactly what’s left this month', 'Your data stays on your phone'].map((p) => (
+                {['Log spending in two taps', 'See exactly what’s left this month', 'Saved to your account, on every device'].map((p) => (
                   <View key={p} style={styles.point}>
                     <View style={styles.check}>
                       <Icon name="check" size={14} color={colors.brand} strokeWidth={3} />

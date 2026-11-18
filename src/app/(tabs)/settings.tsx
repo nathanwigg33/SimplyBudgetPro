@@ -8,6 +8,7 @@ import { copyBackup, parseBackup, pickBackupFile, readClipboard, saveBackupFile 
 import { APP_NAME } from '../../lib/brand';
 import { money } from '../../lib/format';
 import { useStore } from '../../lib/store';
+import { signOut, useAuth, useSync } from '../../lib/sync';
 import { accountKinds, colors } from '../../lib/theme';
 
 export default function Settings() {
@@ -23,6 +24,19 @@ export default function Settings() {
   const sampleCount = txns.filter((t) => t.sample).length;
   const restore = useStore((s) => s.restore);
   const [note, setNote] = useState('');
+  const email = useAuth((s) => s.email);
+  const sync = useSync();
+  const syncText =
+    sync.status === 'syncing'
+      ? 'Saving…'
+      : sync.status === 'offline'
+        ? 'Offline. Changes will save when you’re back online'
+        : sync.status === 'error'
+          ? `Couldn’t save: ${sync.error ?? 'unknown error'}. Retrying…`
+          : sync.lastSynced
+            ? `All changes saved · ${new Date(sync.lastSynced).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+            : 'All changes saved';
+  const syncColor = sync.status === 'error' ? colors.bad : sync.status === 'offline' ? colors.warn : colors.good;
 
   async function doRestore(read: () => Promise<string>) {
     setNote('');
@@ -176,6 +190,41 @@ export default function Settings() {
       </Card>
       {note ? <Text style={styles.note}>{note}</Text> : null}
 
+      <SectionTitle>Account</SectionTitle>
+      <Card style={{ paddingVertical: 4 }}>
+        <View style={styles.row}>
+          <Text style={{ fontSize: 22, width: 34 }}>👤</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowTitle} numberOfLines={1}>
+              {email}
+            </Text>
+            <Text style={[styles.rowSub, { color: syncColor }]}>● {syncText}</Text>
+          </View>
+        </View>
+        <Tap style={[styles.row, styles.divider]} onPress={() => router.push('/security')}>
+          <Text style={{ fontSize: 22, width: 34 }}>🔐</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowTitle}>Password & account</Text>
+            <Text style={styles.rowSub}>Change your password or delete your account</Text>
+          </View>
+          <Icon name="chevron" size={16} color={colors.faint} />
+        </Tap>
+        <Tap
+          style={[styles.row, styles.divider]}
+          onPress={() =>
+            confirmAction('Sign out?', 'Your budget stays safe in your account. Sign back in on any device to see it.', 'Sign out', () => {
+              void signOut();
+            })
+          }
+        >
+          <Text style={{ fontSize: 22, width: 34 }}>🚪</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowTitle}>Sign out</Text>
+            <Text style={styles.rowSub}>Removes your budget from this device until you sign in again</Text>
+          </View>
+        </Tap>
+      </Card>
+
       <SectionTitle>Data</SectionTitle>
       <Card style={{ paddingVertical: 4 }}>
         {sampleCount > 0 && (
@@ -192,17 +241,17 @@ export default function Settings() {
         )}
         <Tap
           style={[styles.row, sampleCount > 0 && styles.divider]}
-          onPress={() => confirmAction('Erase everything?', 'Deletes all your transactions, categories and accounts on this device and starts setup again. Save a backup first if you might want them back.', 'Erase', () => { resetAll(); router.replace('/welcome'); })}
+          onPress={() => confirmAction('Erase everything?', 'Deletes all your transactions, categories and accounts from your account on every device, and starts setup again. Save a backup first if you might want them back.', 'Erase', () => { resetAll(); router.replace('/welcome'); })}
         >
           <Text style={{ fontSize: 22, width: 34 }}>↺</Text>
           <View style={{ flex: 1 }}>
             <Text style={[styles.rowTitle, { color: colors.bad }]}>Erase & start over</Text>
-            <Text style={styles.rowSub}>Clears this device and runs setup again</Text>
+            <Text style={styles.rowSub}>Clears your budget everywhere and runs setup again</Text>
           </View>
         </Tap>
       </Card>
 
-      <Text style={styles.foot}>{APP_NAME} · version 1.3{'\n'}Your data stays on this device. Save a backup now and then.</Text>
+      <Text style={styles.foot}>{APP_NAME} · version 2.0{'\n'}Your budget is saved to your account and syncs across your devices.</Text>
     </ScrollView>
   );
 }

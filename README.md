@@ -98,3 +98,13 @@ This repository is connected to **Cloudflare Workers**. Every change pushed to t
 - Deploy command: `npx wrangler deploy` (settings in `wrangler.jsonc`)
 
 Your budget data is never stored here. It lives only on your phone. Use **You → Backup & restore** to move it or keep a copy.
+
+## Accounts & sync (server)
+
+SimplyBudgetPro has email + password accounts. The budget is saved to Cloudflare and syncs across devices.
+
+- `worker/index.ts`: the API under `/api/*` (sign up, sign in, sign out, load/save budget, change password, delete account). Everything else is served from `dist/`.
+- Database: Cloudflare D1 `simplybudgetpro` (bound as `DB`). Tables are in `worker/migrations/`. To apply a new migration: `npx wrangler d1 migrations apply simplybudgetpro --remote`.
+- Passwords are hashed with PBKDF2-SHA256; sessions are random tokens stored only as hashes.
+- Sync (`src/lib/sync.ts` + `src/lib/merge.ts`): each change saves about a second later; other devices pick it up when opened or within a minute. Edits from two devices are merged (three-way merge), so nothing is overwritten.
+- Local testing: `npm run build && npx wrangler d1 migrations apply simplybudgetpro --local && npx wrangler dev`.
