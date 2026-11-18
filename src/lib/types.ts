@@ -34,7 +34,9 @@ export interface Txn {
 export interface AccountBalance {
   /** Balance (or amount owed, for credit cards) as of the end of `balanceAsOf`. */
   balance?: number;
-  balanceAsOf?: string; // YYYY-MM-DD; transactions dated after this move the balance
+  balanceAsOf?: string; // YYYY-MM-DD the balance was entered
+  /** Transactions on this account that already existed when the balance was entered (already counted in it). */
+  balanceSeen?: string[];
   hideFromNetWorth?: boolean;
 }
 

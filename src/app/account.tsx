@@ -30,10 +30,14 @@ export default function AccountEditor() {
     const hasBal = bal.trim() !== '' && !isNaN(b);
     // Only re-anchor the balance when it was changed, so logged transactions keep moving it.
     const balFields = !hasBal
-      ? { balance: undefined, balanceAsOf: undefined }
+      ? { balance: undefined, balanceAsOf: undefined, balanceSeen: undefined }
       : startBal !== undefined && Math.abs(b - startBal) < 0.005
         ? {}
-        : { balance: b, balanceAsOf: toISO(new Date()) };
+        : {
+            balance: b,
+            balanceAsOf: toISO(new Date()),
+            balanceSeen: existing ? txns.filter((t) => t.accountId === existing.id).map((t) => t.id) : [],
+          };
     save({ id: existing?.id, name: name.trim(), kind, limit: kind === 'credit' && l > 0 ? l : undefined, hideFromNetWorth: !inWorth, ...balFields });
     router.back();
   }

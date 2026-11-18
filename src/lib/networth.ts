@@ -54,9 +54,13 @@ export function accountHasBalance(a: Account) {
 export function accountBalance(a: Account, txns: Txn[]) {
   if (typeof a.balance !== 'number') return 0;
   const asOf = a.balanceAsOf ?? '0000-00-00';
+  const seen = a.balanceSeen ? new Set(a.balanceSeen) : undefined;
   let b = a.balance;
   for (const t of txns) {
-    if (t.accountId !== a.id || t.date <= asOf) continue;
+    if (t.accountId !== a.id) continue;
+    // Anything logged after the balance was entered moves it, whatever date it's for.
+    // (Balances saved before this list existed fall back to comparing dates, counting same-day entries.)
+    if (seen ? seen.has(t.id) : t.date < asOf) continue;
     const inflow = t.direction === 'in' ? t.amount : -t.amount;
     // For a card, spending raises what you owe and refunds/payments lower it.
     b += accountIsDebt(a) ? -inflow : inflow;
